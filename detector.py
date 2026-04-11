@@ -6,7 +6,7 @@ from logger import log_alert
 from responder import block_ip
 from threat_intel import is_malicious, simulate_feed_update
 from dashboard import update_dashboard, log_alert_event
-from utils import check_payload
+from utils import check_payload, get_location
 from utils import is_valid_ip, sanitize_ip
 import statistics
 from collections import deque
@@ -15,7 +15,7 @@ ip_activity = defaultdict(list)
 ip_attack_history = {}
 alerted_ips = {}
 ip_request_history = defaultdict(list)
-global_traffic = []
+global_traffic = deque(maxlen=10000)
 traffic_window = deque(maxlen=50)
 
 def update_traffic(count):
@@ -202,7 +202,7 @@ def should_alert(ip):
 
 def analyze(ip, packet):
     current_time = time.time()
-    country = "Unknown"
+    country = get_location(ip)
     alert_allowed = should_alert(ip)
 
     ip_activity[ip] = [
@@ -259,7 +259,7 @@ def analyze(ip, packet):
         
         log_alert(alert)
     if score >= BLOCK_THRESHOLD or (ip_reputation[ip] > 20 and score > 0):
-        country = "Unknown"
+        country = get_location(ip)
 
         alert = {
             "ip": ip,
@@ -279,7 +279,7 @@ def analyze(ip, packet):
 
     elif score >= ALERT_THRESHOLD and alert_allowed:
 
-        country = "Unknown"
+        country = get_location(ip)
 
         alert = {
             "ip": ip,
@@ -306,7 +306,7 @@ def analyze(ip, packet):
         
         log_alert(alert)
 
-    global_traffic[:] = [
-        (t, ip) for (t, ip) in global_traffic
-        if time.time() - t < TIME_WINDOW
-    ]
+    global_traffic = deque(
+        [(t, ip) for (t, ip) in global_traffic if time.time() - t < TIME_WINDOW],
+        maxlen=10000
+    )

@@ -1,7 +1,7 @@
 import sqlite3
 import threading
-
-# Create connection
+# NOTE: SQLite connection is shared across threads.
+# All DB operations MUST use `with lock:` to avoid corruption.
 conn = sqlite3.connect("soc.db", check_same_thread=False)
 lock = threading.Lock()
 

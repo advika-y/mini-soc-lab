@@ -1,5 +1,6 @@
 import requests
 import urllib3
+import os
 
 # Disable SSL warnings (self-signed cert)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -8,10 +9,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 login_url = "http://127.0.0.1:5000/login"
 
 credentials = {
-    "username": "admin",
+    "username": os.getenv("ADMIN_USERNAME"),
     "password": "admin123"
 }
-
 response = requests.post(login_url, json=credentials, verify=False)
 
 if response.status_code == 200:
