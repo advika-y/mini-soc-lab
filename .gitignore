@@ -3,5 +3,9 @@
 soc.db
 blocked_ips.json
 alerts.log
+temp
+check_db.py
+*.log
+*.db
 __pycache__/
 *.pyc
