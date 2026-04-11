@@ -1,0 +1,7 @@
+.env
+*.env
+soc.db
+blocked_ips.json
+alerts.log
+__pycache__/
+*.pyc
