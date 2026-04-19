@@ -7,5 +7,6 @@ temp
 check_db.py
 *.log
 *.db
+desktop.ini
 __pycache__/
 *.pyc

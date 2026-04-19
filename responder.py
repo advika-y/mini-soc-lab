@@ -2,11 +2,10 @@ import subprocess
 import threading
 import time
 from utils import is_valid_ip, sanitize_ip
-from database import conn, lock  # ✅ use DB lock (NOT local lock)
+from database import conn, lock
 
-# ---------------- BLOCK IP ---------------- #
 
-def block_ip(ip, duration=30):
+def block_ip(ip: str, duration: int = 30) -> None:
     ip = sanitize_ip(ip)
 
     if not is_valid_ip(ip):
@@ -15,113 +14,92 @@ def block_ip(ip, duration=30):
 
     unblock_time = int(time.time()) + duration
 
-    # ✅ DB check with lock + new cursor
     with lock:
         cursor = conn.cursor()
         existing = cursor.execute(
-            "SELECT ip FROM blocked_ips WHERE ip=?",
-            (ip,)
+            "SELECT ip FROM blocked_ips WHERE ip=?", (ip,)
         ).fetchone()
 
-    # ❌ FIX: do NOT create new timer again
+    # Skip if already tracked — avoids stacking multiple unblock timers for the same IP.
     if existing:
         print(f"[INFO] IP already blocked: {ip}")
         return
 
     try:
-        # Remove old rule (ignore failure)
-        subprocess.run([
-            "netsh", "advfirewall", "firewall", "delete", "rule",
-            f"name=Block_{ip}"
-        ], capture_output=True, text=True)
+        subprocess.run(
+            ["netsh", "advfirewall", "firewall", "delete", "rule", f"name=Block_{ip}"],
+            capture_output=True, text=True,
+        )
 
-        # Add new block rule
-        command = [
-            "netsh", "advfirewall", "firewall", "add", "rule",
-            f"name=Block_{ip}",
-            "dir=in",
-            "action=block",
-            f"remoteip={ip}"
-        ]
+        result = subprocess.run(
+            [
+                "netsh", "advfirewall", "firewall", "add", "rule",
+                f"name=Block_{ip}", "dir=in", "action=block", f"remoteip={ip}",
+            ],
+            capture_output=True, text=True, timeout=5,
+        )
+  
+    except (subprocess.SubprocessError, OSError) as e:
+        print(f"[ERROR] Firewall command failed: {e}")
+        return
+    with lock:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR REPLACE INTO blocked_ips (ip, unblock_time) VALUES (?, ?)",
+            (ip, unblock_time),
+        )
+        conn.commit()
+    threading.Timer(duration, unblock_ip, args=[ip]).start()
+    if result.returncode != 0:
+        print(f"[WARNING] Firewall rule failed (no admin?): {result.stderr}")
+        print(f"[INFO] IP {ip} logged as blocked in DB anyway")
+    else:
+        print(f"[ACTION] Successfully blocked IP: {ip} for {duration} seconds")
 
-        result = subprocess.run(command, capture_output=True, text=True, timeout=5)
-
-        if result.returncode == 0:
-            with lock:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO blocked_ips (ip, unblock_time)
-                    VALUES (?, ?)
-                """, (ip, unblock_time))
-                conn.commit()
-
-            print(f"[ACTION] Successfully blocked IP: {ip} for {duration} seconds")
-
-            # ✅ ONLY ONE TIMER
-            threading.Timer(duration, unblock_ip, args=[ip]).start()
-
-        else:
-            print(f"[ERROR] Firewall rule failed: {result.stderr}")
-
-    except Exception as e:
-        print(f"[ERROR] Failed to block IP: {e}")
-
-
-# ---------------- UNBLOCK IP ---------------- #
-
-def unblock_ip(ip):
+def unblock_ip(ip: str) -> None:
     ip = sanitize_ip(ip)
 
     if not is_valid_ip(ip):
         return
 
-    command = [
-        "netsh", "advfirewall", "firewall", "delete", "rule",
-        f"name=Block_{ip}"
-    ]
-
     try:
         result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=5
+            ["netsh", "advfirewall", "firewall", "delete", "rule", f"name=Block_{ip}"],
+            capture_output=True, text=True, timeout=5,
         )
 
-        # ✅ Ignore if rule doesn't exist
-        if "No rules match" in result.stderr:
-            pass
-
+        # netsh outputs "No rules match" to stdout, not stderr.
+        if "No rules match" in result.stdout:
+            print(f"[INFO] No firewall rule found for {ip}, already clean")
         elif result.returncode == 0:
             print(f"[ACTION] Unblocked IP: {ip}")
-
         else:
             print(f"[ERROR] Unblock failed: {result.stderr}")
 
     except subprocess.TimeoutExpired:
         print(f"[WARNING] Unblock timeout for IP: {ip}")
 
-    # ✅ ALWAYS clean DB (even if firewall fails)
+    # Always remove from DB even if the firewall command failed,
+    # so the IP does not remain permanently stuck in the blocked list.
     with lock:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM blocked_ips WHERE ip=?", (ip,))
         conn.commit()
 
 
-# ---------------- RESTORE BLOCKS ---------------- #
-
-def restore_blocks():
+def restore_blocks() -> None:
+    """Re-schedule unblock timers for IPs that were blocked before the process restarted."""
     now = int(time.time())
 
     with lock:
         cursor = conn.cursor()
-        rows = cursor.execute(
-            "SELECT ip, unblock_time FROM blocked_ips"
-        ).fetchall()
+        rows = cursor.execute("SELECT ip, unblock_time FROM blocked_ips").fetchall()
 
     for ip, unblock_time in rows:
+        if unblock_time is None:
+            unblock_ip(ip)
+            continue
         remaining = unblock_time - now
-
         if remaining > 0:
             print(f"[INFO] Restoring block for {ip}, remaining {remaining}s")
             threading.Timer(remaining, unblock_ip, args=[ip]).start()
@@ -129,5 +107,4 @@ def restore_blocks():
             unblock_ip(ip)
 
 
-# Run on startup
 restore_blocks()

@@ -1,37 +1,17 @@
-import requests
-import urllib3
-import os
+import os, requests
 
-# Disable SSL warnings (self-signed cert)
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+BASE = "http://127.0.0.1:5000"
+credentials = {"username": os.getenv("ADMIN_USERNAME"), "password": os.getenv("ADMIN_PASSWORD")}
 
-# Step 1: Login
-login_url = "http://127.0.0.1:5000/login"
+if not credentials["username"] or not credentials["password"]:
+    raise SystemExit("Set ADMIN_USERNAME and ADMIN_PASSWORD env vars before running.")
 
-credentials = {
-    "username": os.getenv("ADMIN_USERNAME"),
-    "password": "admin123"
-}
-response = requests.post(login_url, json=credentials, verify=False)
+r = requests.post(f"{BASE}/login", json=credentials)
+if r.status_code != 200:
+    raise SystemExit(f"Login failed: {r.text}")
 
-if response.status_code == 200:
-    token = response.json().get("access_token")
-    print("TOKEN:", token)
-else:
-    print("Login failed:", response.text)
-    exit()
+token = r.json()["access_token"]
+print("Login OK.")
 
-
-# Step 2: Access protected route
-headers = {
-    "Authorization": f"Bearer {token}"
-}
-
-alerts_url = "http://127.0.0.1:5000/alerts"
-
-response = requests.get(alerts_url, headers=headers, verify=False)
-
-if response.status_code == 200:
-    print("ALERTS:", response.json())
-else:
-    print("Failed to fetch alerts:", response.text)
+r = requests.get(f"{BASE}/alerts", headers={"Authorization": f"Bearer {token}"})
+print(f"Alerts OK. Count: {len(r.json())}" if r.ok else f"Failed: {r.text}")

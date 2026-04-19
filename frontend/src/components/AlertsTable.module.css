@@ -1,0 +1,140 @@
+.wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: lowercase;
+}
+
+.title::before {
+  content: '// ';
+  color: var(--text-dim);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  padding: 8px 14px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 400;
+  white-space: nowrap;
+  background: var(--bg-elevated);
+  position: sticky;
+  top: 0;
+}
+
+.row {
+  border-bottom: 1px solid var(--border-dim);
+  opacity: 1;
+}
+
+.row:hover {
+  background: var(--bg-hover);
+}
+
+.table td {
+  padding: 7px 14px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--font-mono) !important;
+  color: var(--text-dim) !important;
+  font-size: 12px !important;
+}
+
+.ip {
+  font-family: var(--font-mono) !important;
+  color: var(--blue-text) !important;
+  font-size: 12px !important;
+}
+
+.type {
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+}
+
+.score {
+  font-family: var(--font-mono) !important;
+  color: var(--amber-text) !important;
+  font-size: 12px !important;
+  text-align: center !important;
+}
+
+.country {
+  color: var(--text-dim) !important;
+  font-size: 12px !important;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+
+.red {
+  background: var(--red-dim);
+  color: var(--red-text);
+  border: 1px solid #6b1c1c;
+}
+
+.amber {
+  background: var(--amber-dim);
+  color: var(--amber-text);
+  border: 1px solid #5c3d00;
+}
+
+.dim {
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}

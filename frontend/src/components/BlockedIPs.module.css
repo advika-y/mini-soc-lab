@@ -1,0 +1,123 @@
+.wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.title::before {
+  content: '// ';
+  color: var(--text-dim);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--red-text);
+}
+
+.list {
+  list-style: none;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border-dim);
+  animation: fade-in 0.2s ease forwards;
+  opacity: 0;
+  animation-fill-mode: forwards;
+  transition: background 0.1s;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+}
+
+.ipRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse-dot 2s infinite;
+  flex-shrink: 0;
+}
+
+.ip {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--red-text);
+}
+
+.unblockBtn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  background: transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.unblockBtn:hover:not(:disabled) {
+  color: var(--green-text);
+  border-color: var(--green);
+}
+
+@keyframes fade-in{
+  from {opacity:0; transform: translateY(4px);}
+  to {opacity:1; transform: translateY(0);}
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; }
+  50% {opacity: 0.3; }
+}
+
+.unblockBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.error {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--red-text);
+  padding: 8px 16px;
+  background: var(--red-dim);
+  border-bottom: 1px solid var(--border);
+}

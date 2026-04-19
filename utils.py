@@ -1,5 +1,8 @@
-import requests
 import ipaddress
+import requests
+
+_location_cache: dict[str, str] = {}
+
 
 def is_valid_ip(ip: str) -> bool:
     try:
@@ -8,58 +11,51 @@ def is_valid_ip(ip: str) -> bool:
     except ValueError:
         return False
 
+
 def sanitize_ip(ip: str) -> str:
     if not isinstance(ip, str):
         return ""
-
     return ip.strip().replace("\n", "").replace("\r", "").replace("\t", "")
 
-cache = {}
 
-def get_location(ip):
-    # Step 1: Validate IP before API call
+def get_location(ip: str) -> str:
     if not is_valid_ip(ip):
         return "Unknown"
 
-    # Step 2: Check cache
-    if ip in cache:
-        return cache[ip]
+    if ip in _location_cache:
+        return _location_cache[ip]
 
     try:
-        response = requests.get(
-            f"http://ip-api.com/json/{ip}",
-            timeout=2
-        )
+        response = requests.get(f"https://ipwho.is/{ip}", timeout=2)
 
         if response.status_code != 200:
             return "Unknown"
 
         data = response.json()
-        country = data.get("country", "Unknown")
 
-        cache[ip] = country
+        # ipwho.is returns {"success": false} for private or unresolvable IPs.
+        # Default is False so a missing field does not bypass this check.
+        if not data.get("success", False):
+            return "Unknown"
+
+        country: str = data.get("country", "Unknown")
+        _location_cache[ip] = country
         return country
 
     except requests.exceptions.RequestException:
         return "Unknown"
 
-def check_payload(packet):
+
+def check_payload(packet) -> bool:
     from scapy.packet import Raw
 
-    suspicious_keywords = ["malware", "exploit", "attack", "trojan", "virus"]
+    SUSPICIOUS_KEYWORDS = ("malware", "exploit", "attack", "trojan", "virus")
 
-    if packet.haslayer(Raw):
-        try:
-            payload = packet[Raw].load.decode(errors="ignore").lower()
+    if not packet.haslayer(Raw):
+        return False
 
-            # Limit payload size (prevent abuse)
-            payload = payload[:500]
-
-            for keyword in suspicious_keywords:
-                if keyword in payload:
-                    return True
-
-        except Exception:
-            return False
-
-    return False
+    try:
+        payload = packet[Raw].load.decode(errors="ignore").lower()[:500]
+        return any(kw in payload for kw in SUSPICIOUS_KEYWORDS)
+    except (UnicodeDecodeError, AttributeError):
+        return False

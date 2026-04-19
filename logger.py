@@ -18,7 +18,6 @@ def log_alert(alert):
 
     print(color + f"{readable_time} | {message}" + Style.RESET_ALL)
 
-    # ✅ THREAD-SAFE DATABASE WRITE
     with lock:
         cursor = conn.cursor()
         cursor.execute("""
@@ -32,4 +31,9 @@ def log_alert(alert):
             alert["action"],
             alert["timestamp"]
         ))
+        if alert["action"] == "BLOCKED":
+            cursor.execute(
+                "INSERT OR IGNORE INTO blocked_ips (ip) VALUES (?)",
+                (alert["ip"],)
+            )
         conn.commit()

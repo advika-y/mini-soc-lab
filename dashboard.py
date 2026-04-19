@@ -12,12 +12,12 @@ def log_alert_event():
     alert_count.append(time.time())
 
 def show_dashboard():
-    plt.figure(figsize=(10, 6))  # 👈 better size
+    plt.figure(figsize=(10, 6))   
 
     while True:
         plt.clf()
 
-        # 🔹 Top IPs (limit to top 5)
+        # Top IPs (limit to top 5)
         sorted_ips = sorted(ip_counter.items(), key=lambda x: x[1], reverse=True)[:5]
 
         ips = [ip for ip, _ in sorted_ips]
@@ -28,7 +28,7 @@ def show_dashboard():
         plt.bar(ips, counts)
         plt.xticks(rotation=30)
 
-        # 🔹 Alerts over time (last 20)
+        # Alerts over time (last 20)
         recent_alerts = alert_count[-20:]
 
         plt.subplot(2, 1, 2)

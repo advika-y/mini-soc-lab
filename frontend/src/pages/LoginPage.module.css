@@ -1,0 +1,155 @@
+.root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.panel {
+  width: 440px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: fade-in 0.4s ease forwards;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+
+.terminal {
+  padding: 16px;
+  min-height: 130px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.line {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  animation: slide-in 0.25s ease forwards;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.prompt {
+  color: var(--green);
+  user-select: none;
+}
+
+.lineText {
+  color: var(--text-secondary);
+}
+
+.err {
+  color: var(--red-text);
+}
+
+.cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--green);
+  margin-top: 2px;
+  animation: pulse-dot 1s infinite;
+}
+
+.form {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+}
+
+.input {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-color: var(--green);
+}
+
+.errorMsg {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--red-text);
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--green-text);
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  padding: 10px;
+  width: 100%;
+  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: 0.04em;
+}
+
+.btn:hover:not(:disabled) {
+  background: #1f5c38;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
