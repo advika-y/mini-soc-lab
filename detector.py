@@ -6,16 +6,18 @@ import time
 from config import *
 from logger import log_alert
 from responder import block_ip
-from threat_intel import is_malicious, simulate_feed_update
+from threat_intel import is_malicious
 from dashboard import update_dashboard, log_alert_event
+from types import Alert
 from utils import check_payload, get_location, is_valid_ip, sanitize_ip
+from scapy.packet import Packet
 
 # Pre-compile CIDR ranges once at startup. Per-packet checks are then O(n)
 # membership tests against already-parsed objects rather than repeated string parsing.
 _WHITELIST_NETWORKS = [ipaddress.ip_network(cidr) for cidr in WHITELIST_CIDRS]
 
-ip_activity: dict[str, list] = defaultdict(list)
-ip_attack_history: dict[str, list] = defaultdict(list)
+ip_activity: dict[str, list[tuple[float, int | None]]] = defaultdict(list)
+ip_attack_history: dict[str, list[tuple[str, float]]] = defaultdict(list)
 alerted_ips: dict[str, float] = {}
 global_traffic: deque[tuple[float, str]] = deque(maxlen=10000)
 traffic_window: deque[int] = deque(maxlen=50)
@@ -50,7 +52,7 @@ def is_anomaly(current_count: int) -> bool:
     return (current_count - mean) / stdev > 2.5
 
 
-def classify_attack(records: list, ports: set) -> str:
+def classify_attack(records: list[tuple[float, int | None]], ports: set[int]) -> str:
     if len(ports) > PORT_SCAN_THRESHOLD:
         return "PORT_SCAN"
     if len(records) > REQUEST_THRESHOLD:
@@ -68,7 +70,7 @@ def correlate(ip: str, attack_type: str) -> bool:
     return len(set(a for a, _ in ip_attack_history[ip])) > 1
 
 
-def process_packet(packet) -> None:
+def process_packet(packet: Packet) -> None:
     from scapy.layers.inet import IP, TCP, UDP
 
     if not packet.haslayer(IP):
@@ -87,7 +89,6 @@ def process_packet(packet) -> None:
         block_ip(src_ip)
         return
 
-    simulate_feed_update()
     update_dashboard(src_ip)
 
     timestamp = time.time()
@@ -174,7 +175,7 @@ def should_alert(ip: str) -> bool:
     return True
 
 
-def _make_alert(ip: str, attack_type: str, score: int, country: str, action: str) -> dict:
+def _make_alert(ip: str, attack_type: str, score: int, country: str, action: str) -> Alert:
     return {
         "ip": ip,
         "type": attack_type,
@@ -185,7 +186,7 @@ def _make_alert(ip: str, attack_type: str, score: int, country: str, action: str
     }
 
 
-def analyze(ip: str, packet) -> None:
+def analyze(ip: str, packet: Packet) -> None:
     current_time = time.time()
     country = get_location(ip)
     alert_allowed = should_alert(ip)

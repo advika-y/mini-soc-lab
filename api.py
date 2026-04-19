@@ -10,7 +10,7 @@ from flask_limiter.util import get_remote_address
 from flask_cors import CORS
 from utils import is_valid_ip, sanitize_ip
 from responder import unblock_ip
-from database import conn, lock
+from database import conn, db_execute, lock
 
 load_dotenv()
 
@@ -83,27 +83,24 @@ def login():
 @jwt_required()
 @limiter.limit("30 per minute")
 def get_alerts():
-    with lock:
-        cursor = conn.cursor()
-        rows = cursor.execute("""
+    
+    rows = db_execute("""
             SELECT ip, type, score, country, action, timestamp
             FROM alerts
             ORDER BY timestamp DESC
             LIMIT 100
-        """).fetchall()
+        """, fetch=True)
 
     return jsonify([
         {"ip": r[0], "type": r[1], "score": r[2], "country": r[3], "action": r[4], "timestamp": r[5]}
         for r in rows
     ])
 
-
 @app.route("/blocked")
 @jwt_required()
+@limiter.limit("30 per minute")
 def get_blocked():
-    with lock:
-        cursor = conn.cursor()
-        rows = cursor.execute("SELECT ip FROM blocked_ips").fetchall()
+    rows = db_execute("SELECT ip FROM blocked_ips", fetch=True)
     return jsonify([row[0] for row in rows])
 
 

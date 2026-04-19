@@ -55,8 +55,6 @@ export default function DashboardPage() {
     setTimeout(() => fetchAll(), 1000)
   }
 
-  
-
   return (
     <div className={styles.layout}>
       <Navbar

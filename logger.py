@@ -1,10 +1,11 @@
 from colorama import Fore, Style, init
 from datetime import datetime
-from database import conn, lock
+from database import db_execute
+from types import Alert
 
 init(autoreset=True)
 
-def log_alert(alert):
+def log_alert(alert: Alert) -> None:
     readable_time = datetime.fromtimestamp(alert["timestamp"])
 
     message = f"{alert['action']} | {alert['type']} | {alert['ip']} | Score: {alert['score']} | {alert['country']}"
@@ -18,9 +19,7 @@ def log_alert(alert):
 
     print(color + f"{readable_time} | {message}" + Style.RESET_ALL)
 
-    with lock:
-        cursor = conn.cursor()
-        cursor.execute("""
+    db_execute("""
             INSERT INTO alerts (ip, type, score, country, action, timestamp)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
@@ -31,9 +30,3 @@ def log_alert(alert):
             alert["action"],
             alert["timestamp"]
         ))
-        if alert["action"] == "BLOCKED":
-            cursor.execute(
-                "INSERT OR IGNORE INTO blocked_ips (ip) VALUES (?)",
-                (alert["ip"],)
-            )
-        conn.commit()

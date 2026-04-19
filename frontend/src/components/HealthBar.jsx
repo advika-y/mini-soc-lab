@@ -1,3 +1,4 @@
+import { formatUnixTime } from '../utils'
 import styles from './HealthBar.module.css'
 
 export default function HealthBar({ health, loading }) {
@@ -16,7 +17,7 @@ export default function HealthBar({ health, loading }) {
         <span className={styles.chip}>mini-soc-lab</span>
         <span className={styles.time}>
           {health?.time
-            ? new Date(health.time * 1000).toLocaleTimeString()
+            ? formatUnixTime(health.time)
             : '--:--:--'}
         </span>
       </div>

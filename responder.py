@@ -2,7 +2,7 @@ import subprocess
 import threading
 import time
 from utils import is_valid_ip, sanitize_ip
-from database import conn, lock
+from database import db_execute
 
 
 def block_ip(ip: str, duration: int = 30) -> None:
@@ -14,23 +14,18 @@ def block_ip(ip: str, duration: int = 30) -> None:
 
     unblock_time = int(time.time()) + duration
 
-    with lock:
-        cursor = conn.cursor()
-        existing = cursor.execute(
-            "SELECT ip FROM blocked_ips WHERE ip=?", (ip,)
-        ).fetchone()
+    
+    existing = db_execute("SELECT ip FROM blocked_ips WHERE ip=?", params=(ip,), fetch=True)
 
     # Skip if already tracked — avoids stacking multiple unblock timers for the same IP.
     if existing:
         print(f"[INFO] IP already blocked: {ip}")
         return
-
     try:
         subprocess.run(
             ["netsh", "advfirewall", "firewall", "delete", "rule", f"name=Block_{ip}"],
             capture_output=True, text=True,
         )
-
         result = subprocess.run(
             [
                 "netsh", "advfirewall", "firewall", "add", "rule",
@@ -38,24 +33,22 @@ def block_ip(ip: str, duration: int = 30) -> None:
             ],
             capture_output=True, text=True, timeout=5,
         )
-  
+        if result.returncode == 0:
+            print(f"[ACTION] Successfully blocked IP: {ip} for {duration} seconds")
+        else:
+            print(f"[WARNING] Firewall rule failed (no admin?): {result.stderr}")
+            print(f"[INFO] IP {ip} logged as blocked in DB anyway")
     except (subprocess.SubprocessError, OSError) as e:
         print(f"[ERROR] Firewall command failed: {e}")
-        return
-    with lock:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT OR REPLACE INTO blocked_ips (ip, unblock_time) VALUES (?, ?)",
-            (ip, unblock_time),
-        )
-        conn.commit()
-    threading.Timer(duration, unblock_ip, args=[ip]).start()
-    if result.returncode != 0:
-        print(f"[WARNING] Firewall rule failed (no admin?): {result.stderr}")
         print(f"[INFO] IP {ip} logged as blocked in DB anyway")
-    else:
-        print(f"[ACTION] Successfully blocked IP: {ip} for {duration} seconds")
 
+    db_execute(
+        "INSERT OR REPLACE INTO blocked_ips (ip, unblock_time) VALUES (?, ?)",
+        params=(ip, unblock_time)
+    )
+    threading.Timer(duration, unblock_ip, args=[ip]).start()
+    
+    
 def unblock_ip(ip: str) -> None:
     ip = sanitize_ip(ip)
 
@@ -81,19 +74,16 @@ def unblock_ip(ip: str) -> None:
 
     # Always remove from DB even if the firewall command failed,
     # so the IP does not remain permanently stuck in the blocked list.
-    with lock:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM blocked_ips WHERE ip=?", (ip,))
-        conn.commit()
+    db_execute("DELETE FROM blocked_ips WHERE ip=?", params=(ip,))
 
 
 def restore_blocks() -> None:
-    """Re-schedule unblock timers for IPs that were blocked before the process restarted."""
-    now = int(time.time())
+    """Re-schedule unblock timers for IPs that were blocked before the process restarted.
 
-    with lock:
-        cursor = conn.cursor()
-        rows = cursor.execute("SELECT ip, unblock_time FROM blocked_ips").fetchall()
+    Call this explicitly from main.py after all modules are loaded — not at import time.
+    """
+    now = int(time.time())
+    rows = db_execute("SELECT ip, unblock_time FROM blocked_ips", fetch=True)
 
     for ip, unblock_time in rows:
         if unblock_time is None:
@@ -105,6 +95,3 @@ def restore_blocks() -> None:
             threading.Timer(remaining, unblock_ip, args=[ip]).start()
         else:
             unblock_ip(ip)
-
-
-restore_blocks()

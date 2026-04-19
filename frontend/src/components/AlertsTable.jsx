@@ -1,3 +1,4 @@
+import { formatUnixTime } from '../utils'
 import styles from './AlertsTable.module.css'
 
 const ACTION_MAP = {
@@ -13,10 +14,6 @@ const ACTION_MAP = {
 function Badge({ action }) {
   const map = ACTION_MAP[action] ?? { label: action.slice(0, 8), cls: 'dim' }
   return <span className={`${styles.badge} ${styles[map.cls]}`}>{map.label}</span>
-}
-
-function formatTime(ts) {
-  return new Date(ts * 1000).toLocaleTimeString([], { hour12: false })
 }
 
 export default function AlertsTable({ alerts, loading }) {
@@ -49,7 +46,7 @@ export default function AlertsTable({ alerts, loading }) {
             <tbody>
               {alerts.map((a, i) => (
                 <tr key={i} className={styles.row} style={{ animationDelay: `${i * 0.02}s` }}>
-                  <td className={styles.mono}>{formatTime(a.timestamp)}</td>
+                  <td className={styles.mono}>{formatUnixTime(a.timestamp)}</td>
                   <td className={styles.ip}>{a.ip}</td>
                   <td className={styles.type}>{a.type}</td>
                   <td className={styles.score}>{a.score}</td>

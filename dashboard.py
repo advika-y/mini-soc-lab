@@ -5,7 +5,7 @@ import time
 ip_counter = defaultdict(int)
 alert_count = []
 
-def update_dashboard(ip):
+def update_dashboard(ip: str) -> None:
     ip_counter[ip] += 1
 
 def log_alert_event():

@@ -1,5 +1,6 @@
 import ipaddress
 import requests
+from scapy.packet import Packet
 
 _location_cache: dict[str, str] = {}
 
@@ -42,11 +43,14 @@ def get_location(ip: str) -> str:
         _location_cache[ip] = country
         return country
 
-    except requests.exceptions.RequestException:
+    except requests.exceptions.Timeout:
+        return "Unknown"
+    except requests.exceptions.RequestException as e:
+        print(f"[WARNING] Geolocation request failed for {ip}: {e}")
         return "Unknown"
 
 
-def check_payload(packet) -> bool:
+def check_payload(packet: Packet) -> bool:
     from scapy.packet import Raw
 
     SUSPICIOUS_KEYWORDS = ("malware", "exploit", "attack", "trojan", "virus")
