@@ -8,7 +8,7 @@ from logger import log_alert
 from responder import block_ip
 from threat_intel import is_malicious
 from dashboard import update_dashboard, log_alert_event
-from types import Alert
+from soc_types import Alert
 from utils import check_payload, get_location, is_valid_ip, sanitize_ip
 from scapy.packet import Packet
 

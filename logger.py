@@ -1,7 +1,7 @@
 from colorama import Fore, Style, init
 from datetime import datetime
 from database import db_execute
-from types import Alert
+from soc_types import Alert
 
 init(autoreset=True)
 
